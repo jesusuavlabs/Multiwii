@@ -85,8 +85,8 @@ const char pidnames[] PROGMEM =
 static uint32_t currentTime = 0;
 static uint16_t previousTime = 0;
 static uint16_t cycleTime = 0; 	// this is the number in micro second to achieve a full loop, it can differ a little and is taken into account in the PID loop
-static uint16_t calibratingA = 0;  // the calibration is done in the main loop. Calibrating decreases at each cycle down to 0, then we enter in a normal mode.
-static uint16_t calibratingG;
+static uint16_t calibratingA = 0;  // the accelerometer calibration is done in the main loop. Calibrating decreases at each cycle down to 0, then we enter in a normal mode.
+static uint16_t calibratingG;	   // Calibrating gyroscope decreases at each cycle down to 0, then we enter is calibrated.
 static uint16_t acc_1G;         	// this is the 1G measured acceleration
 static int16_t  acc_25deg;
 static int16_t  headFreeModeHold;
@@ -180,6 +180,7 @@ static uint16_t intPowerMeterSum, intPowerTrigger1;
 static int16_t failsafeEvents = 0;
 volatile int16_t failsafeCnt = 0;
 
+// Data received from the receiver 8 channels
 static int16_t rcData[8];      	// interval [1000;2000]
 static int16_t rcCommand[4];   	// interval [1000;2000] for THROTTLE and [-500;+500] for ROLL/PITCH/YAW
 static int16_t lookupPitchRollRC[6];// lookup table for expo & RC rate PITCH+ROLL
@@ -313,6 +314,7 @@ void blinkLED(uint8_t num, uint8_t wait,uint8_t repeat) {
   }
 }
 
+// Revisar más en detalle, demasiado complejo
 void annexCode() { // this code is excetuted at each loop and won't interfere with control loop if it lasts less than 650 microseconds
   static uint32_t calibratedAccTime;
   uint16_t tmp,tmp2;
@@ -334,12 +336,14 @@ void annexCode() { // this code is excetuted at each loop and won't interfere wi
   }
 
   for(axis=0;axis<3;axis++) {
+	// MIDRC 1500
 	tmp = min(abs(rcData[axis]-MIDRC),500);
 	#if defined(DEADBAND)
   	if (tmp>DEADBAND) { tmp -= DEADBAND; }
   	else { tmp=0; }
 	#endif
 	if(axis!=2) { //ROLL & PITCH
+	// tmp2 goes from 0 to 5
   	tmp2 = tmp/100;
   	rcCommand[axis] = lookupPitchRollRC[tmp2] + (tmp-tmp2*100) * (lookupPitchRollRC[tmp2+1]-lookupPitchRollRC[tmp2]) / 100;
   	prop1 = 100-(uint16_t)conf.rollPitchRate*tmp/500;
@@ -412,6 +416,8 @@ void annexCode() { // this code is excetuted at each loop and won't interfere wi
 	buzzer(buzzerFreq); // external buzzer routine that handles buzzer events globally now
   #endif
  
+ // calibratingA = accelerometer calibrating  if 0 is calibrated
+ // calibratingG = gyrocope calibrating   if 0 is calibrated
   if ( (calibratingA>0 && ACC ) || (calibratingG>0) ) { // Calibration phasis
 	LEDPIN_TOGGLE;
   } else {
@@ -521,6 +527,7 @@ void setup() {
   #if defined(GIMBAL)
    calibratingA = 400;
   #endif
+  // calibratingG = gyrocope calibrating   > 0 is not calibrated
   calibratingG = 400;
   #if defined(POWERMETER)
 	for(uint8_t i=0;i<=PMOTOR_SUM;i++)
@@ -629,9 +636,11 @@ void loop () {
 	if (rcData[THROTTLE] < MINCHECK) {   												 //si la aceleración está por debajo del umbral
   	errorGyroI[ROLL] = 0; errorGyroI[PITCH] = 0; errorGyroI[YAW] = 0;
   	errorAngleI[ROLL] = 0; errorAngleI[PITCH] = 0;
+  	// this indicates the number of time (multiple of RC measurement at 50Hz) the sticks must be maintained to run or switch off motors
   	rcDelayCommand++;
   	if (rcData[YAW] < MINCHECK && rcData[PITCH] < MINCHECK && !f.ARMED) {    // si yaw y pitch por debajo del umbral minimo y si no está armado
-    	if (rcDelayCommand == 20) {   													 
+    	if (rcDelayCommand == 20) {
+    	// calibratingG = gyrocope calibrating   > 0 is not calibrated
       	calibratingG=400;
       	#if GPS
         	GPS_reset_home_position();   												 //si hay GPS resetea la posición de comienzo
@@ -658,6 +667,7 @@ void loop () {
       	previousTime = micros();
     	}
   	}
+  	// This part is comented due to INFLIGHT_ACC_CALIBRATION comented in config.h
   	#if defined(INFLIGHT_ACC_CALIBRATION)  
     	else if (!f.ARMED && rcData[YAW] < MINCHECK && rcData[PITCH] > MAXCHECK && rcData[ROLL] > MAXCHECK){
       	if (rcDelayCommand == 20){
@@ -677,16 +687,20 @@ void loop () {
       	}
    	}
  	#endif
+  	// conf.activate[BOXARM] > 0 quadcopter is running?
   	else if (conf.activate[BOXARM] > 0) {
+  		 // Arming/Disarming via ARM BOX
     	if ( rcOptions[BOXARM] && f.OK_TO_ARM
     	#if defined(FAILSAFE)
       	&& failsafeCnt <= 1
     	#endif
     	) {
-      f.ARMED = 1;
-      headFreeModeHold = heading;
-    	} else if (f.ARMED) f.ARMED = 0;
+      f.ARMED = 1; // go arm
+      headFreeModeHold = heading; // acquire new heading
+    	} else if (f.ARMED) f.ARMED = 0; //Disarm
     	rcDelayCommand = 0;
+
+   	// Fragment to tell Multiwii how to arm/disarm via YAW or ROLL
   	#ifdef ALLOW_ARM_DISARM_VIA_TX_YAW
   	} else if ( (rcData[YAW] < MINCHECK )  && f.ARMED) {
     	if (rcDelayCommand == 20) f.ARMED = 0; // rcDelayCommand = 20 => 20x20ms = 0.4s = time to wait for a specific RC command to be acknowledged
@@ -705,6 +719,8 @@ void loop () {
       	headFreeModeHold = heading;
     	}
   	#endif
+    // FIN fragment to tell Multiwii how to arm/disarm via YAW or ROLL
+
   	#ifdef LCD_TELEMETRY_AUTO
   	} else if (rcData[ROLL] < MINCHECK && rcData[PITCH] > MAXCHECK && !f.ARMED) {
     	if (rcDelayCommand == 20) {
