@@ -2,7 +2,7 @@
 
 #define EEPROM_CONF_VERSION 161
 
- void readEEPROM1() {
+void readEEPROM() {
   uint8_t i;
 
   eeprom_read_block((void*)&conf, (void*)0, sizeof(conf));
