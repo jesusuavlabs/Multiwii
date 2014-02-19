@@ -1,4 +1,6 @@
 #if defined(BUZZER)
+
+
 static uint8_t buzzerIsOn = 0,beepDone =0;
 static uint32_t buzzerLastToggleTime;
 uint8_t isBuzzerON() { return buzzerIsOn; } // returns true while buzzer is buzzing; returns 0 for silent periods
