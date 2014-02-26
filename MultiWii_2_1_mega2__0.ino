@@ -948,14 +948,14 @@ void loop () {
   cycleTime = currentTime - previousTime;
   previousTime = currentTime;
 
-  #if MAG
+ // #if MAG
 	if (abs(rcCommand[YAW]) <70 && f.MAG_MODE) {
   	int16_t dif = heading - magHold;
   	if (dif <= - 180) dif += 360;
   	if (dif >= + 180) dif -= 360;
   	if ( f.SMALL_ANGLES_25 ) rcCommand[YAW] -= dif*conf.P8[PIDMAG]/30;  // 18 deg
 	} else magHold = heading;
-  #endif
+  // #endif
 
   #if BARO
 	if (f.BARO_MODE) {
@@ -1024,6 +1024,7 @@ void loop () {
                   	else DTerm = ((int32_t)deltaSum*dynD8[axis])>>5;          	// 32 bits is needed for calculation
                  	 
 	axisPID[axis] =  PTerm + ITerm - DTerm;
+	axisPID[axis] = rcCommand[axis];
   }
 
   mixTable();
