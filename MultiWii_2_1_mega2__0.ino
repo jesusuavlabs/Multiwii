@@ -610,43 +610,43 @@ void loop () {
   #define RC_FREQ 50
 
   if (currentTime > rcTime ) { // 50Hz
-	rcTime = currentTime + 20000;   	// si la marca de tiempo actual ha pasado el timeout RCTIME
+	rcTime = currentTime + 20000;   	// [javiles] si la marca de tiempo actual ha pasado el timeout RCTIME
 	computeRC();   			 //  ejecuta computeRC()
-   						//la función está en RX.ino y sirve para "compute and Filter the RX data"
+   						// [javiles] la funcion esta en RX.ino y sirve para "compute and Filter the RX data"
 	// Failsafe routine - added by MIS
 	#if defined(FAILSAFE)
-  	if ( failsafeCnt > (5*FAILSAVE_DELAY) && f.ARMED) {              	// Stabilize, and set Throttle to specified level
-    	for(i=0; i<3; i++) rcData[i] = MIDRC;                           	// after specified guard time after RC signal is lost (in 0.1sec)
+  	if ( failsafeCnt > (5*FAILSAVE_DELAY) && f.ARMED) {              	// [javiles] Stabilize, and set Throttle to specified level
+    	for(i=0; i<3; i++) rcData[i] = MIDRC;                           	// [javiles] after specified guard time after RC signal is lost (in 0.1sec)
     	rcData[THROTTLE] = FAILSAVE_THROTTLE;
-    	if (failsafeCnt > 5*(FAILSAVE_DELAY+FAILSAVE_OFF_DELAY)) {      	// Turn OFF motors after specified Time (in 0.1sec)
-      	f.ARMED = 0;   // This will prevent the copter to automatically rearm if failsafe shuts it down and prevents
-      	f.OK_TO_ARM = 0; // to restart accidentely by just reconnect to the tx - you will have to switch off first to rearm
+    	if (failsafeCnt > 5*(FAILSAVE_DELAY+FAILSAVE_OFF_DELAY)) {      	// [javiles] Turn OFF motors after specified Time (in 0.1sec)
+      	f.ARMED = 0;   // [javiles] This will prevent the copter to automatically rearm if failsafe shuts it down and prevents
+      	f.OK_TO_ARM = 0; // [javiles] to restart accidentely by just reconnect to the tx - you will have to switch off first to rearm
     	}
     	failsafeEvents++;
   	}
   	if ( failsafeCnt > (5*FAILSAVE_DELAY) && !f.ARMED) {  //Turn of "Ok To arm to prevent the motors from spinning after repowering the RX with low throttle and aux to arm
-      	f.ARMED = 0;   // This will prevent the copter to automatically rearm if failsafe shuts it down and prevents
-      	f.OK_TO_ARM = 0; // to restart accidentely by just reconnect to the tx - you will have to switch off first to rearm
+      	f.ARMED = 0;   // [javiles] This will prevent the copter to automatically rearm if failsafe shuts it down and prevents
+      	f.OK_TO_ARM = 0; // [javiles] to restart accidentely by just reconnect to the tx - you will have to switch off first to rearm
   	}
   	failsafeCnt++;
 	#endif
 	// end of failsave routine - next change is made with RcOptions setting
     
    			 
-	if (rcData[THROTTLE] < MINCHECK) {   												 //si la aceleración está por debajo del umbral
+	if (rcData[THROTTLE] < MINCHECK) {   												 // [javiles] si la aceleracion esta por debajo del umbral
   	errorGyroI[ROLL] = 0; errorGyroI[PITCH] = 0; errorGyroI[YAW] = 0;
   	errorAngleI[ROLL] = 0; errorAngleI[PITCH] = 0;
-  	// this indicates the number of time (multiple of RC measurement at 50Hz) the sticks must be maintained to run or switch off motors
+  	// [javiles] this indicates the number of time (multiple of RC measurement at 50Hz) the sticks must be maintained to run or switch off motors
   	rcDelayCommand++;
-  	if (rcData[YAW] < MINCHECK && rcData[PITCH] < MINCHECK && !f.ARMED) {    // si yaw y pitch por debajo del umbral minimo y si no está armado
+  	if (rcData[YAW] < MINCHECK && rcData[PITCH] < MINCHECK && !f.ARMED) {    // [javiles] si yaw y pitch por debajo del umbral minimo y si no esta armado
     	if (rcDelayCommand == 20) {
-    	// calibratingG = gyrocope calibrating   > 0 is not calibrated
+    	// [javiles] calibratingG = gyrocope calibrating   > 0 is not calibrated (�400 puede ser 4 segundos? Porque para calibrar el acelerometro pide 5 segundos la WinGUI)
       	calibratingG=400;
       	#if GPS
-        	GPS_reset_home_position();   												 //si hay GPS resetea la posición de comienzo
+        	GPS_reset_home_position();   												 // [javiles] si hay GPS resetea la posicion de comienzo
       	#endif
     	}
-  	} else if (rcData[YAW] > MAXCHECK && rcData[PITCH] > MAXCHECK && !f.ARMED) {    // si yaw y pitch por encima del umbral maximo y si no está armado
+  	} else if (rcData[YAW] > MAXCHECK && rcData[PITCH] > MAXCHECK && !f.ARMED) {    // [javiles] si yaw y pitch por encima del umbral maximo y si no esta armado
     	if (rcDelayCommand == 20) {
       	#ifdef TRI
         	servo[5] = 1500; // we center the yaw servo in conf mode
@@ -662,16 +662,16 @@ void loop () {
         	writeServos();
       	#endif     	 
       	#if defined(LCD_CONF)
-        	configurationLoop(); // beginning LCD configuration
+        	configurationLoop(); // [javiles] beginning LCD configuration
       	#endif
-      	previousTime = micros();
+      	previousTime = micros(); // [javiles] guarda en previousTime el valor actual (16 bits)
     	}
   	}
-  	// This part is comented due to INFLIGHT_ACC_CALIBRATION comented in config.h
+  	// [javiles] This part is comented due to INFLIGHT_ACC_CALIBRATION and it is comented in config.h
   	#if defined(INFLIGHT_ACC_CALIBRATION)  
     	else if (!f.ARMED && rcData[YAW] < MINCHECK && rcData[PITCH] > MAXCHECK && rcData[ROLL] > MAXCHECK){
       	if (rcDelayCommand == 20){
-        	if (AccInflightCalibrationMeasurementDone){            	// trigger saving into eeprom after landing
+        	if (AccInflightCalibrationMeasurementDone){            	// [javiles] trigger saving into eeprom after landing
           	AccInflightCalibrationMeasurementDone = 0;
           	AccInflightCalibrationSavetoEEProm = 1;
         	}else{
@@ -687,9 +687,9 @@ void loop () {
       	}
    	}
  	#endif
-  	// conf.activate[BOXARM] > 0 quadcopter is running?
+  	// [javiles] conf.activate[BOXARM] > 0 �quadcopter is running?
   	else if (conf.activate[BOXARM] > 0) {
-  		 // Arming/Disarming via ARM BOX
+  		 // [javiles] Arming/Disarming via ARM BOX
     	if ( rcOptions[BOXARM] && f.OK_TO_ARM
     	#if defined(FAILSAFE)
       	&& failsafeCnt <= 1
@@ -700,7 +700,7 @@ void loop () {
     	} else if (f.ARMED) f.ARMED = 0; //Disarm
     	rcDelayCommand = 0;
 
-   	// Fragment to tell Multiwii how to arm/disarm via YAW or ROLL
+   	// [javiles] Fragment to tell Multiwii how to arm/disarm via YAW or ROLL
   	#ifdef ALLOW_ARM_DISARM_VIA_TX_YAW
   	} else if ( (rcData[YAW] < MINCHECK )  && f.ARMED) {
     	if (rcDelayCommand == 20) f.ARMED = 0; // rcDelayCommand = 20 => 20x20ms = 0.4s = time to wait for a specific RC command to be acknowledged
@@ -775,6 +775,8 @@ void loop () {
   	led_flasher_autoselect_sequence();
 	#endif
     
+
+  	// [javiles] Ahora esta comentada esa constante en config.h
 	#if defined(INFLIGHT_ACC_CALIBRATION)
   	if (AccInflightCalibrationArmed && f.ARMED && rcData[THROTTLE] > MINCHECK && !rcOptions[BOXARM] ){ // Copter is airborne and you are turning it off via boxarm : start measurement
     	InflightcalibratingA = 50;
@@ -944,7 +946,7 @@ void loop () {
  
   computeIMU();
   // Measure loop rate just afer reading the sensors
-  currentTime = micros();
+  currentTime = micros(); // micros te devuelve el tiempo actual (16 bits)
   cycleTime = currentTime - previousTime;
   previousTime = currentTime;
 
