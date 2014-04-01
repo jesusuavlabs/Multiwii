@@ -514,6 +514,8 @@ void setup() {
   POWERPIN_OFF;
   initOutput();
   readEEPROM();
+  // /////////////////////////////////////////////////////////
+  // Si es la primera vez carga los valores de PID en conf
   checkFirstTime();
   configureReceiver();
   #if defined(OPENLRSv2MULTI)
@@ -640,7 +642,7 @@ void loop () {
   	rcDelayCommand++;
   	if (rcData[YAW] < MINCHECK && rcData[PITCH] < MINCHECK && !f.ARMED) {    // [javiles] si yaw y pitch por debajo del umbral minimo y si no esta armado
     	if (rcDelayCommand == 20) {
-    	// [javiles] calibratingG = gyrocope calibrating   > 0 is not calibrated (¿400 puede ser 4 segundos? Porque para calibrar el acelerometro pide 5 segundos la WinGUI)
+    	// [javiles] calibratingG = gyrocope calibrating   > 0 is not calibrated (ï¿½400 puede ser 4 segundos? Porque para calibrar el acelerometro pide 5 segundos la WinGUI)
       	calibratingG=400;
       	#if GPS
         	GPS_reset_home_position();   												 // [javiles] si hay GPS resetea la posicion de comienzo
@@ -687,7 +689,7 @@ void loop () {
       	}
    	}
  	#endif
-  	// [javiles] conf.activate[BOXARM] > 0 ¿quadcopter is running?
+  	// [javiles] conf.activate[BOXARM] > 0 ï¿½quadcopter is running?
   	else if (conf.activate[BOXARM] > 0) {
   		 // [javiles] Arming/Disarming via ARM BOX
     	if ( rcOptions[BOXARM] && f.OK_TO_ARM
@@ -987,7 +989,8 @@ void loop () {
 	}
   #endif
 
-
+	
+  /////////////////////////////////////////////7
   //**** PITCH & ROLL & YAW PID ****    
   for(axis=0;axis<3;axis++) {
 	if (f.ACC_MODE && axis<2 ) { //LEVEL MODE
