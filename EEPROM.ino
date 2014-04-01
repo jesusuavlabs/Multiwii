@@ -51,6 +51,7 @@ void writeParams(uint8_t b) {
 
 void checkFirstTime() {
   if (EEPROM_CONF_VERSION == conf.checkNewConf) return;
+  // /////////////////////////////////////////////////////
   conf.P8[ROLL]  = 40;  conf.I8[ROLL] = 30; conf.D8[ROLL]  = 23;
   conf.P8[PITCH] = 40; conf.I8[PITCH] = 30; conf.D8[PITCH] = 23;
   conf.P8[YAW]   = 85;  conf.I8[YAW]  = 45;  conf.D8[YAW]  = 0;
